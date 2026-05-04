@@ -1,6 +1,45 @@
-# Filament Demo
+# Filament Demo — Deferred tab badge staleness reproduction
 
-A full-featured demo app built with Filament. It covers a realistic spread of admin panel patterns across three modules, an e-commerce shop, a blog, and an HR suite, so you can see how Filament handles real-world use cases.
+> **This branch is a minimal reproduction of a Filament v5 bug.**
+>
+> Tab badges configured with `->deferBadge()` go stale after data-mutating
+> actions (CreateAction, EditAction, DeleteAction). The badge counts are only
+> fetched once on Alpine `init()` and are never refreshed when the underlying
+> data changes — so the table updates but the tab counts stay wrong until you
+> hard-reload the page.
+>
+> See `app/Filament/Resources/Blog/Posts/Pages/ListPosts.php` for the configured
+> tabs (All / Published / Draft, all using `->deferBadge()`).
+>
+> ## Steps to reproduce
+>
+> 1. Set up the demo (see "Getting started" below).
+> 2. Log in at `/admin/login` with `admin@filamentphp.com` / `password`.
+> 3. Navigate to **Blog → Posts**. Note the badge counts on the **All**,
+>    **Published**, and **Draft** tabs.
+> 4. Click **New post** and create a post with `Published date` left empty
+>    (so it lands in the **Draft** tab).
+> 5. Save. The new row appears in the table.
+> 6. **Observed:** The **All** and **Draft** badge counts do **not** increase.
+>    They stay at the values fetched on initial page load.
+> 7. **Expected:** The badges should re-fetch after the action commits.
+>    A full page reload shows the correct numbers.
+>
+> Same behaviour occurs with EditAction (e.g. set/clear a published date —
+> the row moves between tabs but counts don't update) and DeleteAction.
+>
+> ## Background
+>
+> Filament v4 originally re-fetched deferred badges on every Livewire `commit`
+> via `Livewire.hook('commit', …)`. That caused over-fetching loops on every
+> sort / search / filter / paginate (issues
+> [#19583](https://github.com/filamentphp/filament/issues/19583),
+> [#19574](https://github.com/filamentphp/filament/issues/19574),
+> [#19590](https://github.com/filamentphp/filament/issues/19590)).
+>
+> PR [#19735](https://github.com/filamentphp/filament/pull/19735) fixed those
+> by **removing the commit-hook refresh entirely** — but that also removed
+> refresh on legitimate data mutations, which is what this repro shows.
 
 ## Getting started
 
