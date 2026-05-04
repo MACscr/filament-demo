@@ -14,19 +14,25 @@
 > ## Steps to reproduce
 >
 > 1. Set up the demo (see "Getting started" below).
-> 2. Log in at `/admin/login` with `admin@filamentphp.com` / `password`.
+> 2. Log in at `/login` with `admin@filamentphp.com` / `demo.Filament@2021!`.
 > 3. Navigate to **Blog → Posts**. Note the badge counts on the **All**,
->    **Published**, and **Draft** tabs.
-> 4. Click **New post** and create a post with `Published date` left empty
->    (so it lands in the **Draft** tab).
-> 5. Save. The new row appears in the table.
-> 6. **Observed:** The **All** and **Draft** badge counts do **not** increase.
->    They stay at the values fetched on initial page load.
-> 7. **Expected:** The badges should re-fetch after the action commits.
->    A full page reload shows the correct numbers.
+>    **Published**, and **Draft** tabs (e.g. `All 81 / Published 55 / Draft 26`).
+> 4. On any **Published** row, open the row Actions menu and click **Unpublish**
+>    (the existing `toggle_publish` row action — see
+>    `app/Filament/Resources/Blog/Posts/Tables/PostsTable.php`). It calls
+>    `$record->update(['published_at' => null])`, an in-page Livewire commit.
+> 5. The row's status flips to **Draft** and a "Post unpublished" notification
+>    appears — the action committed and the table refreshed.
+> 6. **Observed:** The tab badges stay at `Published 55 / Draft 26`. They are
+>    not re-fetched.
+> 7. Hard-reload the page (`Cmd+R`). The badges now show `Published 54 / Draft 27`,
+>    confirming the data changed but the deferred badges never updated.
 >
-> Same behaviour occurs with EditAction (e.g. set/clear a published date —
-> the row moves between tabs but counts don't update) and DeleteAction.
+> Any in-page data-mutating action shows the same staleness — `EditAction`
+> changing `published_at`, `DeleteAction`, a modal-mode `CreateAction` on the
+> table, etc. (The page-level `CreateAction` in this demo navigates to a
+> separate `/create` page, so the return trip is a fresh page load and hides
+> the bug — that's why the row action is the cleanest repro.)
 >
 > ## Background
 >
